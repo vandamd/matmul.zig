@@ -118,9 +118,16 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const alloc = gpa.allocator();
 
-    var matA = try Matrix.rand(alloc, 5, 5);
+    const time = std.time;
+    const Instant = time.Instant;
+
+    var matA = try Matrix.rand(alloc, 500, 500);
     defer matA.deinit(alloc);
 
+    const start = try Instant.now();
     var naiveMult = try Matrix.naiveMult(alloc, matA, matA);
     defer naiveMult.deinit(alloc);
+    const end = try Instant.now();
+    const elapsed: f64 = @floatFromInt(end.since(start));
+    std.debug.print("Time Elapsed: {d:.3}ms\n", .{elapsed / time.ns_per_ms});
 }
