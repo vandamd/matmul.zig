@@ -28,6 +28,32 @@ pub const Matrix = struct {
         };
     }
 
+    pub fn rand(allocator: std.mem.Allocator, rows: usize, columns: usize) !Matrix {
+        if (rows <= 0 or columns <= 0) {
+            return error.invalidDimension;
+        }
+
+        const numElements = rows * columns;
+        const data = try allocator.alloc(f32, numElements);
+
+        var prng = std.Random.DefaultPrng.init(blk: {
+            var seed: u64 = undefined;
+            try std.posix.getrandom(std.mem.asBytes(&seed));
+            break :blk seed;
+        });
+        const random = prng.random();
+
+        for (0..data.len) |i| {
+            data[i] = std.Random.float(random, f32);
+        }
+
+        return Matrix{
+            .rows = rows,
+            .columns = columns,
+            .data = data,
+        };
+    }
+
     pub fn zeros(allocator: std.mem.Allocator, rows: usize, columns: usize) !Matrix {
         if (rows <= 0 or columns <= 0) {
             return error.invalidDimension;
@@ -92,13 +118,9 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const alloc = gpa.allocator();
 
-    var matA = try Matrix.full(alloc, 5, 2, 4);
+    var matA = try Matrix.rand(alloc, 5, 5);
     defer matA.deinit(alloc);
 
-    var matB = try Matrix.full(alloc, 2, 2, 2);
-    defer matB.deinit(alloc);
-
-    var naiveMult = try Matrix.naiveMult(alloc, matA, matB);
+    var naiveMult = try Matrix.naiveMult(alloc, matA, matA);
     defer naiveMult.deinit(alloc);
-    std.debug.print("mult produced: {d}\n", .{naiveMult.data});
 }
